@@ -21,23 +21,22 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'LoraToArduino',
+        name: 'LoraText - Off-grid Encrypted Messaging',
         short_name: 'LoraText',
-        description: 'offline messenger',
-        theme_color: "#4DBA87",
-        background_color: "#000000",
+        description: 'Off-grid, encrypted group messaging over a LoRa radio. Text anywhere, even with no signal.',
+        theme_color: "#0b0b10",
+        background_color: "#0b0b10",
         display: "standalone",
         icons: [
           {
-            src: 'img/logo.svg',
-            size: '488x424',
-            type: 'image/svg+xml',
+            src: 'img/brand-logo.png',
+            sizes: '512x512',
+            type: 'image/png',
             purpose: "any"
-
           },
           {
             src: 'img/lora.png',
-            size: '512x512',
+            sizes: '512x512',
             type: 'image/png',
             purpose: "any"
           },

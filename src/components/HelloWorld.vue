@@ -1,61 +1,108 @@
 <!-- eslint-disable no-unused-vars -->
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title> LoRa Chat Application</v-card-title>
-      <v-card-text>
-        <v-snackbar v-model="snackbar" :timeout="3000">
-          Device connection Lost
-        </v-snackbar>
-        <v-row>
-          <div>
-            <v-btn v-if="!isDeviceConnected" @click="newBLEConnection()">
-              New Request Bluetooth Device
-            </v-btn>
-            <v-btn v-else @click="disconnect"> Disconnect </v-btn>
+  <div class="lora">
+    <v-snackbar v-model="snackbar" :timeout="3000" color="error">
+      Device connection lost
+    </v-snackbar>
+
+    <div class="lora__wrap">
+      <!-- Connection + controls -->
+      <section class="panel">
+        <div class="panel__head">
+          <div class="panel__title">
+            <span class="panel__eyebrow">Radio link</span>
+            <h2>Pair your LoRa radio</h2>
           </div>
-        </v-row>
-        <v-row>
-          <v-btn
+          <span
+            class="connpill"
+            :class="isDeviceConnected ? 'connpill--on' : 'connpill--off'"
+          >
+            <span class="connpill__dot"></span>
+            {{ isDeviceConnected ? 'Connected' : 'Not paired' }}
+          </span>
+        </div>
+
+        <div class="panel__row">
+          <button
+            v-if="!isDeviceConnected"
+            class="btn btn--primary"
+            @click="newBLEConnection()"
+          >
+            <i class="mdi mdi-bluetooth"></i> Pair Bluetooth device
+          </button>
+          <button v-else class="btn btn--ghost" @click="disconnect">
+            <i class="mdi mdi-bluetooth-off"></i> Disconnect
+          </button>
+
+          <p v-if="device" class="devicename">
+            <i class="mdi mdi-radio-tower"></i> {{ device.name }}
+          </p>
+        </div>
+
+        <div class="panel__row panel__row--wrap">
+          <button
             v-if="!notificationPermission"
+            class="chipbtn"
             @click="requestBackgroundSync()"
           >
-            Request Background Notifications
-          </v-btn>
-          <v-btn @click="toggleMap()" :disabled="!device">
-            <span v-if="showMap">Hide </span><span v-else>Show </span>&nbsp;Map
-          </v-btn>
-          <v-btn @click="shareLocation = !shareLocation" :disabled="!device">
-            Share Location
-          </v-btn>
-
-          <v-btn
+            <i class="mdi mdi-bell-outline"></i> Background notifications
+          </button>
+          <button class="chipbtn" @click="toggleMap()" :disabled="!device">
+            <i class="mdi mdi-map-outline"></i>
+            <span v-if="showMap">Hide map</span><span v-else>Show map</span>
+          </button>
+          <button
+            class="chipbtn"
+            :class="{ 'chipbtn--active': shareLocation }"
+            @click="shareLocation = !shareLocation"
+            :disabled="!device"
+          >
+            <i class="mdi mdi-crosshairs-gps"></i> Share location
+          </button>
+          <button
+            class="chipbtn"
             @click="
               sendingTimestamps = !sendingTimestamps;
               timeStampMessageSender(sendingTimestamps);
             "
             :disabled="!device"
           >
-            <span v-if="sendingTimestamps">Stop </span
-            ><span v-else>Start </span>&nbsp;Sending Timestamps
-          </v-btn>
-          <v-btn @click="clearStorage()">Clear Storage</v-btn>
-        </v-row>
-        <v-row>
-          <div v-if="device">
-            <p>Device Name: {{ device.name }}</p>
+            <i class="mdi mdi-clock-outline"></i>
+            <span v-if="sendingTimestamps">Stop timestamps</span>
+            <span v-else>Send timestamps</span>
+          </button>
+          <button class="chipbtn chipbtn--danger" @click="clearStorage()">
+            <i class="mdi mdi-trash-can-outline"></i> Clear storage
+          </button>
+        </div>
+      </section>
+
+      <!-- Key exchange -->
+      <section class="panel">
+        <div class="panel__head">
+          <div class="panel__title">
+            <span class="panel__eyebrow">Encryption</span>
+            <h2>Pre-shared key</h2>
           </div>
-        </v-row>
-        <v-row>
-          <v-col class="text-center">
-            <v-text-field
-              label="Pre-shared key"
-              variant="outlined"
-              v-model="sharedKey"
-            ></v-text-field>
-          </v-col>
-          <v-col>
-            <v-btn @click="generateKey()" v-if="!sharedKey">Generate Key</v-btn>
+          <span class="connpill connpill--key">
+            <i class="mdi mdi-lock-outline"></i> Private by design
+          </span>
+        </div>
+
+        <div class="keyrow">
+          <v-text-field
+            label="Pre-shared key"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+            v-model="sharedKey"
+            class="keyfield"
+          ></v-text-field>
+
+          <div class="keyrow__actions">
+            <button class="btn btn--primary" @click="generateKey()" v-if="!sharedKey">
+              <i class="mdi mdi-key-variant"></i> Generate key
+            </button>
 
             <QRCreator v-if="sharedKey" :sharedKey="sharedKey"></QRCreator>
             <qrreader
@@ -67,104 +114,120 @@
                 }
               "
             ></qrreader>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-  </v-container>
-  <v-container>
-    <div v-if="!affirmRefresh">
-      <div
-        v-for="m in messages"
-        :key="m.id"
-        :class="[
-          'd-flex flex-row align-center my-2',
-          m.yours ? 'justify-end' : null,
-        ]"
-      >
-        <span v-if="m.yours" class="blue--text mr-3"
-          ><v-chip
-            color="green"
-            size="x-large"
-            class="text-wrap"
-            v-if="!m.isLocation && !m.isPin"
-          >
-            <span>{{ decryptMessage(m, m.sharedKey) }}</span>
-            <v-icon v-if="m.recieved" right>mdi-check</v-icon>
-          </v-chip>
-          <v-progress-linear
-            v-if="!m.recieved && !shouldRetry(m.sentDate) && !m.isLocation"
-            color="primary"
-            height="4"
-            indeterminate
-          ></v-progress-linear>
-          <div  v-else-if="
-              !m.recieved &&
-              shouldRetry(m.sentDate) &&
-              !m.isLocation &&
-              !m.isPin
-            ">
-          <v-icon
-            @click="addToQueue(m)"
-            >mdi-replay</v-icon
-          >
-          <v-icon
-
-            @click="removeFromQueue(m)"
-            >mdi-delete</v-icon
-          >
+          </div>
         </div>
-        </span>
-        <span v-else class="blue--text ml-3"
-          ><v-chip
-            color="blue"
-            size="x-large"
-            class="text-wrap"
-            v-if="!m.isLocation"
-          >
-            {{ decryptMessage(m, m.sharedKey) }}
-          </v-chip></span
+        <p class="keyhint">
+          <i class="mdi mdi-shield-key-outline"></i>
+          Everyone in your group needs the same key. Share it with the QR code -
+          messages are encrypted with it before they ever hit the radio.
+        </p>
+      </section>
+
+      <!-- Message thread -->
+      <section class="thread" v-if="!affirmRefresh">
+        <div v-if="messages.length === 0" class="thread__empty">
+          <i class="mdi mdi-message-lock-outline"></i>
+          <p>No messages yet. Pair a radio, set a key, and say hello off-grid.</p>
+        </div>
+
+        <div
+          v-for="m in messages"
+          :key="m.id"
+          class="msgrow"
+          :class="{ 'msgrow--you': m.yours }"
         >
-      </div>
+          <template v-if="m.yours">
+            <div class="bubble bubble--you" v-if="!m.isLocation && !m.isPin">
+              <span class="bubble__text">{{ decryptMessage(m, m.sharedKey) }}</span>
+              <span class="bubble__meta">
+                <i class="mdi mdi-lock bubble__lock"></i>
+                <i v-if="m.recieved" class="mdi mdi-check-all bubble__ack"></i>
+              </span>
+            </div>
+            <div
+              class="bubble__sending"
+              v-if="!m.recieved && !shouldRetry(m.sentDate) && !m.isLocation"
+            >
+              <v-progress-linear
+                color="primary"
+                height="4"
+                rounded
+                indeterminate
+              ></v-progress-linear>
+            </div>
+            <div
+              class="bubble__retry"
+              v-else-if="
+                !m.recieved &&
+                shouldRetry(m.sentDate) &&
+                !m.isLocation &&
+                !m.isPin
+              "
+            >
+              <button class="iconbtn" title="Retry" @click="addToQueue(m)">
+                <i class="mdi mdi-replay"></i> Retry
+              </button>
+              <button class="iconbtn iconbtn--danger" title="Delete" @click="removeFromQueue(m)">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="bubble bubble--them" v-if="!m.isLocation">
+              <span class="bubble__text">{{ decryptMessage(m, m.sharedKey) }}</span>
+              <span class="bubble__meta">
+                <i class="mdi mdi-lock-open-check bubble__lock"></i>
+              </span>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Composer -->
+      <section class="composer">
+        <v-text-field
+          v-model="tempMessage"
+          append-icon="mdi-send"
+          :disabled="!device && stillSending"
+          variant="solo-filled"
+          density="comfortable"
+          clear-icon="mdi-close-circle"
+          clearable
+          hide-details
+          label="Message"
+          type="text"
+          @click:append="prepareMessage(tempMessage, false, false)"
+          @keydown.enter="prepareMessage(tempMessage, false, false)"
+          maxlength="180"
+          counter
+        ></v-text-field>
+      </section>
+
+      <!-- Map -->
+      <section class="mapwrap" v-if="showMap">
+        <div class="mapwrap__head">
+          <span class="panel__eyebrow">Off-grid map</span>
+          <h2>Live group locations</h2>
+        </div>
+        <MapVue
+          :shareLocationUpdates="shareLocation"
+          :dataProp="parentData"
+          :otherPin="otherPinSent"
+          @messageSent="
+            (msg) => {
+              prepareMessage(msg, true, false);
+            }
+          "
+          @pinSent="
+            (msg) => {
+              prepareMessage(msg, false, true);
+            }
+          "
+        ></MapVue>
+      </section>
     </div>
-  </v-container>
-  <v-container>
-    <!-- :rules="[
-        (v) => !v.includes(',') || 'COMMAs are BAD',
-        (v) => !v.includes('+') || 'PLUS + are BAD',
-      ]" -->
-    <v-text-field
-      v-model="tempMessage"
-      append-icon="mdi-send"
-      :disabled="!device && stillSending"
-      variant="filled"
-      clear-icon="mdi-close-circle"
-      clearable
-      label="Message"
-      type="text"
-      @click:append="prepareMessage(tempMessage, false, false)"
-      @keydown.enter="prepareMessage(tempMessage, false, false)"
-      maxlength="180"
-      counter
-    ></v-text-field>
-    <br />
-    <MapVue
-      v-if="showMap"
-      :shareLocationUpdates="shareLocation"
-      :dataProp="parentData"
-      :otherPin="otherPinSent"
-      @messageSent="
-        (msg) => {
-          prepareMessage(msg, true, false);
-        }
-      "
-      @pinSent="
-        (msg) => {
-          prepareMessage(msg, false, true);
-        }
-      "
-    ></MapVue>
-  </v-container>
+  </div>
 </template>
   
   <script>
@@ -641,12 +704,401 @@ export default {
 </script>
   
 <style scoped>
-.message.right {
-  float: right;
+.lora {
+  min-height: calc(100vh - 52px);
+  padding: 1.25rem 1rem 6rem;
 }
 
-.messages {
-  float: left;
+.lora__wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Panels */
+.panel {
+  padding: 1.25rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, #7c5cff 10%, transparent), transparent 55%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.panel__eyebrow {
+  display: block;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #7c5cff;
+  margin-bottom: 0.25rem;
+}
+
+.panel__title h2 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #f4f4f8;
+}
+
+.panel__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.panel__row + .panel__row {
+  margin-top: 0.9rem;
+}
+
+.panel__row--wrap {
+  gap: 0.5rem;
+}
+
+/* Connection pill */
+.connpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.connpill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.connpill--on {
+  color: #3ddc97;
+  background: rgba(61, 220, 151, 0.12);
+  border-color: rgba(61, 220, 151, 0.4);
+}
+
+.connpill--on .connpill__dot {
+  background: #3ddc97;
+  box-shadow: 0 0 10px #3ddc97;
+}
+
+.connpill--off {
+  color: #a7a7b4;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.connpill--off .connpill__dot {
+  background: #8a8a99;
+}
+
+.connpill--key {
+  color: #b89bff;
+  background: rgba(124, 92, 255, 0.12);
+  border-color: rgba(124, 92, 255, 0.4);
+}
+
+.devicename {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #a7a7b4;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.btn--primary {
+  background: linear-gradient(120deg, #7c5cff, #6344e6);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(124, 92, 255, 0.4);
+}
+
+.btn--primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(124, 92, 255, 0.55);
+}
+
+.btn--ghost {
+  color: #f4f4f8;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.btn--ghost:hover {
+  transform: translateY(-3px);
+  border-color: rgba(124, 92, 255, 0.7);
+}
+
+.chipbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  color: #c9c9d6;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.chipbtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  color: #fff;
+  border-color: rgba(124, 92, 255, 0.6);
+}
+
+.chipbtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chipbtn--active {
+  color: #3ddc97;
+  border-color: rgba(61, 220, 151, 0.5);
+  background: rgba(61, 220, 151, 0.1);
+}
+
+.chipbtn--danger:hover:not(:disabled) {
+  color: #ff5d73;
+  border-color: rgba(255, 93, 115, 0.6);
+}
+
+/* Key exchange */
+.keyrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.keyfield {
+  flex: 1;
+  min-width: 220px;
+}
+
+.keyrow__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.keyhint {
+  margin: 1rem 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #8a8a99;
+}
+
+.keyhint .mdi {
+  color: #7c5cff;
+  margin-top: 1px;
+}
+
+/* Thread */
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.thread__empty {
+  text-align: center;
+  color: #6f6f7e;
+  padding: 2.5rem 1rem;
+}
+
+.thread__empty .mdi {
+  font-size: 2.4rem;
+  color: #3a3a48;
+}
+
+.thread__empty p {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.msgrow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 78%;
+}
+
+.msgrow--you {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bubble {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 18px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  word-break: break-word;
+  border: 1px solid transparent;
+}
+
+.bubble__text {
+  white-space: pre-wrap;
+}
+
+.bubble--you {
+  background: linear-gradient(120deg, #7c5cff, #6344e6);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 8px 22px rgba(124, 92, 255, 0.3);
+}
+
+.bubble--them {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f4f4f8;
+  border-bottom-left-radius: 6px;
+}
+
+.bubble__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: none;
+}
+
+.bubble__lock {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.bubble--them .bubble__lock {
+  color: #3ddc97;
+  opacity: 0.9;
+}
+
+.bubble__ack {
+  font-size: 1rem;
+  color: #b6ffdf;
+}
+
+.bubble__sending {
+  width: 120px;
+  margin-top: 0.35rem;
+}
+
+.bubble__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  color: #ffb454;
+  background: rgba(255, 180, 84, 0.1);
+  border: 1px solid rgba(255, 180, 84, 0.4);
+  transition: background 0.2s ease;
+}
+
+.iconbtn:hover {
+  background: rgba(255, 180, 84, 0.2);
+}
+
+.iconbtn--danger {
+  color: #ff5d73;
+  background: rgba(255, 93, 115, 0.1);
+  border-color: rgba(255, 93, 115, 0.4);
+}
+
+.iconbtn--danger:hover {
+  background: rgba(255, 93, 115, 0.2);
+}
+
+/* Composer */
+.composer {
+  position: sticky;
+  bottom: 1rem;
+  padding: 0.6rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 20, 28, 0.92);
+  backdrop-filter: blur(12px);
+}
+
+/* Map */
+.mapwrap {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.mapwrap__head {
+  padding: 1.1rem 1.25rem 0.85rem;
+}
+
+.mapwrap__head h2 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin: 0;
+  color: #f4f4f8;
+}
+
+@media (max-width: 560px) {
+  .msgrow {
+    max-width: 88%;
+  }
 }
 </style>
   

@@ -1,9 +1,5 @@
 <template>
-  <div
-    id="viewDiv"
-    :width="'100%'"
-    style="align-content: center; height: 80vh"
-  ></div>
+  <div id="viewDiv" class="lora-map"></div>
 </template>
 
 <script>
@@ -255,3 +251,11 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.lora-map {
+  width: 100%;
+  height: 60vh;
+  min-height: 360px;
+}
+</style>

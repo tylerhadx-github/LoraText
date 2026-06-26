@@ -14,6 +14,7 @@
     "@chenfengyuan/vue-qrcode": "^2.0.0",
     "@mdi/font": "5.9.55",
     "core-js": "^3.8.3",
+    "gsap": "^3.15.0",
     "qrcode": "^1.5.3",
     "roboto-fontface": "*",
     "vue": "^3.2.47",
