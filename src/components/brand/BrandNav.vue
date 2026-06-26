@@ -1,8 +1,8 @@
 <template>
   <header class="nav" :class="{ 'nav--solid': scrolled }">
     <div class="nav__inner">
-      <a href="#top" class="nav__brand" @click="go($event, '#top')">
-        <img :src="logo" alt="LoraText" class="nav__logo" />
+      <a href="https://paintbrushoutdoors.com" class="nav__brand" aria-label="Paintbrush Outdoors home">
+        <img :src="logo" alt="Paintbrush Outdoors" class="nav__logo" />
         <span class="nav__brandtext">LoraText</span>
       </a>
 

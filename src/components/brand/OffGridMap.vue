@@ -2,7 +2,12 @@
   <section id="map" class="mapsec" ref="root">
     <div class="mapsec__inner">
       <div class="mapsec__copy" ref="copy">
-        <span class="mapsec__eyebrow">Off-grid map</span>
+        <div class="mapsec__eyerow">
+          <span class="mapsec__eyebrow">Off-grid map</span>
+          <span class="mapsec__planned">
+            <i class="mdi mdi-progress-wrench"></i> Planned
+          </span>
+        </div>
         <h2 class="mapsec__title">See your whole group on a live map</h2>
         <p class="mapsec__lead">
           Share live location over the radio and watch your group move in real time.
@@ -15,6 +20,12 @@
             <span class="mapsec__dot"></span> {{ point }}
           </li>
         </ul>
+
+        <p class="mapsec__note">
+          <i class="mdi mdi-information-outline"></i>
+          Today you can share your location and drop pins over LoRa. Full
+          multi-member group tracking with names is on the roadmap.
+        </p>
 
         <router-link to="/app" class="mapsec__btn">
           Open the map <i class="mdi mdi-arrow-right"></i>
@@ -83,6 +94,13 @@
     align-items: center;
   }
 
+  .mapsec__eyerow {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.85rem;
+  }
+
   .mapsec__eyebrow {
     display: inline-block;
     font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -90,7 +108,45 @@
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: #7c5cff;
-    margin-bottom: 0.85rem;
+  }
+
+  .mapsec__planned {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ffb454;
+    background: rgba(255, 180, 84, 0.12);
+    border: 1px solid rgba(255, 180, 84, 0.4);
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .mapsec__planned .mdi {
+    font-size: 0.85rem;
+  }
+
+  .mapsec__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 180, 84, 0.25);
+    background: rgba(255, 180, 84, 0.06);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #c9c9d6;
+  }
+
+  .mapsec__note .mdi {
+    color: #ffb454;
+    margin-top: 1px;
+    flex: none;
   }
 
   .mapsec__title {
