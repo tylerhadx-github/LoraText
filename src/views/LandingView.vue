@@ -112,7 +112,7 @@
     {
       icon: 'mdi-chip',
       title: 'Custom PCB',
-      blurb: 'A compact board that mounts the LoRa module and exposes Bluetooth - the radio brain of the whole system.',
+      blurb: 'A compact board carrying an Arduino Nano 33 BLE and a Reyax RYLR998 LoRa module, with a LiPo battery, on/off switch and USB charge controller - the radio brain of the whole system.',
       accent: '#7c5cff',
       badge: 'Open hardware',
       badgeType: 'open',
